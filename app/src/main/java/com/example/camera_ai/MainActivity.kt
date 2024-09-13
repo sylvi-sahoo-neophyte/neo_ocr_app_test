@@ -21,6 +21,7 @@ import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
+    //Test Code base
 
     private val REQUEST_CODE_CAMERA_PERMISSION = 100
     private val REQUEST_IMAGE_CAPTURE = 1
