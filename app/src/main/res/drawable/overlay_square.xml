@@ -9,13 +9,14 @@
 
     <!-- Transparent square in the middle -->
     <item
-        android:left="100dp"
-        android:right="100dp"
-        android:top="200dp"
-        android:bottom="200dp">
+        android:left="30dp"
+        android:right="30dp"
+        android:top="70dp"
+        android:bottom="350dp">
         <shape android:shape="rectangle">
             <solid android:color="@android:color/transparent" />
-            <stroke android:width="2dp" android:color="#FFFFFF" /> <!-- White border for the square -->
+            <corners android:radius="12dp"/>
+            <stroke android:width="2dp"  android:color="#ADD8E6" /> <!-- White border for the square -->
         </shape>
     </item>
 </layer-list>
