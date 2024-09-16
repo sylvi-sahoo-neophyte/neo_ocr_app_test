@@ -1,0 +1,23 @@
+<!-- res/drawable/rounded_button_border.xml -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Outer rounded rectangle with white border -->
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="25dp" /> <!-- Adjust the radius for the roundness -->
+            <stroke
+                android:width="3dp"
+                android:color="@android:color/white" /> <!-- White border -->
+            <solid android:color="@android:color/transparent" /> <!-- Transparent background -->
+        </shape>
+    </item>
+
+    <!-- Inner padding to give space between the border and the image -->
+    <item android:top="5dp" android:bottom="5dp" android:left="5dp" android:right="5dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="25dp" />
+            <solid android:color="@android:color/black" /> <!-- Inner black background -->
+        </shape>
+    </item>
+
+</layer-list>

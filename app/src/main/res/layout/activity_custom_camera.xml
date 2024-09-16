@@ -19,6 +19,7 @@
         android:layout_height="match_parent"
         android:background="@drawable/overlay_square" />
 
+
     <!-- Rectangular Box 1 -->
     <TextView
         android:id="@+id/rect_box1"
@@ -93,46 +94,74 @@
         android:id="@+id/black_background"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="@android:color/white"
+        android:background="@android:color/black"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHeight_percent="0.1"
+        app:layout_constraintHeight_percent="0.12"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- Rounded Capture Button -->
-    <Button
+
+    <ImageButton
         android:id="@+id/captureButton"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:background="@drawable/rounded_button_white"
-        android:text="@string/cam"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:background="@drawable/circular_border"
+        android:contentDescription="@string/cam"
+        android:padding="12dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/neoicon"
         app:layout_constraintBottom_toBottomOf="@id/black_background"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/black_background"
-        app:layout_constraintVertical_bias="0.5" />
+        app:layout_constraintVertical_bias="0.5"
+        app:tint="@null" />
+
 
     <ImageView
         android:id="@+id/left_icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_launcher_foreground"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginBottom="20dp"
+        android:src="@drawable/baseline_burst_mode_24"
         app:layout_constraintBottom_toBottomOf="@id/black_background"
         app:layout_constraintEnd_toStartOf="@id/captureButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintVertical_bias="0.5"
-        android:layout_marginEnd="16dp"/>
+        app:tint="@color/white" />
 
-    <!-- Right Icon -->
+
     <ImageView
         android:id="@+id/right_icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_launcher_foreground"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        android:layout_marginBottom="20dp"
+        android:src="@drawable/baseline_format_list_bulleted_24"
         app:layout_constraintBottom_toBottomOf="@id/black_background"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/captureButton"
         app:layout_constraintVertical_bias="0.5"
-        android:layout_marginStart="16dp"/>
+        app:tint="@color/white" />
+
+
+    <FrameLayout
+        android:id="@+id/black_background_with_image"
+        android:layout_width="0dp"
+        android:layout_height="150dp"
+        android:background="@android:color/black"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/black_background"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageView
+            android:id="@+id/display_image"
+            android:layout_width="80dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center"
+            android:scaleType="centerInside"
+            android:visibility="gone" />
+    </FrameLayout>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

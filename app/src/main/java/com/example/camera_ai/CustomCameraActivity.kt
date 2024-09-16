@@ -3,38 +3,57 @@ package com.example.camera_ai
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.hardware.Camera
+import android.media.ExifInterface
 import android.os.Bundle
+import android.view.Surface
 import android.view.View
-import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import android.hardware.Camera
-import android.view.Surface
+import java.io.File
+import java.io.FileOutputStream
 
 class CustomCameraActivity : AppCompatActivity() {
 
     private lateinit var camera: Camera
     private lateinit var preview: CameraPreview
     private val REQUEST_CODE_CAMERA_PERMISSION = 100
+    private lateinit var displayImageView: ImageView
+    private lateinit var leftIcon: ImageView
+    private lateinit var rightIcon: ImageView
+    private var imageFile: File? = null
+
+
+    private var capturedImages = mutableListOf<Bitmap>() // List to store captured images
 
     // Declare TextView references for the boxes
     private lateinit var rectBox1: TextView
     private lateinit var rectBox2: TextView
     private lateinit var rectBox3: TextView
     private lateinit var rectBox4: TextView
-    private var areBoxesVisible = false  // Track visibility state of boxes
+    private lateinit var blackBackgroundWithImage: FrameLayout
+    private lateinit var displayImage: ImageView
 
-    @SuppressLint("MissingInflatedId")
+    private var areBoxesVisible = false
+    private var isImageVisible = false
+
+    @SuppressLint("MissingInflatedId", "CutPasteId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_custom_camera)
 
-        val captureButton = findViewById<Button>(R.id.captureButton)
+        val captureButton = findViewById<ImageButton>(R.id.captureButton)
+
+
         captureButton.setOnClickListener {
             camera.takePicture(null, null) { data, _ ->
                 // Process the captured image
@@ -47,14 +66,32 @@ class CustomCameraActivity : AppCompatActivity() {
         rectBox2 = findViewById(R.id.rect_box2)
         rectBox3 = findViewById(R.id.rect_box3)
         rectBox4 = findViewById(R.id.rect_box4)
+        displayImageView = findViewById(R.id.display_image)
+        leftIcon = findViewById(R.id.left_icon)
+        blackBackgroundWithImage = findViewById(R.id.black_background_with_image)
+        displayImage = findViewById(R.id.display_image)
+        rightIcon = findViewById<ImageView>(R.id.right_icon)
 
-        // Initially hide the boxes
+        // Initially hide the boxes and image
         hideBoxes()
+        hideImage()
 
-        // Handle right icon click to toggle boxes visibility
-        val rightIcon = findViewById<ImageView>(R.id.right_icon)
         rightIcon.setOnClickListener {
+            if (isImageVisible) {
+                // Hide image if it's currently visible
+                hideImage()
+            }
             toggleBoxesVisibility()
+        }
+
+        // Handle left icon click to toggle image visibility
+        leftIcon.setOnClickListener {
+            if (areBoxesVisible) {
+                // Hide boxes if they are currently visible
+                hideBoxes()
+            }
+            toggleImageVisibility()
+            showCapturedImage()
         }
 
         // Check for camera permission
@@ -117,7 +154,6 @@ class CustomCameraActivity : AppCompatActivity() {
         setCameraDisplayOrientation()
     }
 
-    // Toggle visibility of boxes
     private fun toggleBoxesVisibility() {
         if (areBoxesVisible) {
             hideBoxes()
@@ -126,7 +162,6 @@ class CustomCameraActivity : AppCompatActivity() {
         }
     }
 
-    // Hide all the boxes
     private fun hideBoxes() {
         rectBox1.visibility = View.GONE
         rectBox2.visibility = View.GONE
@@ -135,7 +170,6 @@ class CustomCameraActivity : AppCompatActivity() {
         areBoxesVisible = false
     }
 
-    // Show all the boxes
     private fun showBoxes() {
         rectBox1.visibility = View.VISIBLE
         rectBox2.visibility = View.VISIBLE
@@ -144,7 +178,25 @@ class CustomCameraActivity : AppCompatActivity() {
         areBoxesVisible = true
     }
 
-    // Get the best picture size
+    private fun toggleImageVisibility() {
+        if (isImageVisible) {
+            hideImage()
+        } else {
+            showImage()
+        }
+        isImageVisible = !isImageVisible
+    }
+
+    private fun showImage() {
+        blackBackgroundWithImage.visibility = View.VISIBLE
+        displayImage.visibility = View.VISIBLE
+    }
+
+    private fun hideImage() {
+        blackBackgroundWithImage.visibility = View.GONE
+        displayImage.visibility = View.GONE
+    }
+
     private fun getBestPictureSize(sizes: List<Camera.Size>): Camera.Size {
         var bestSize = sizes[0]
         for (size in sizes) {
@@ -155,7 +207,6 @@ class CustomCameraActivity : AppCompatActivity() {
         return bestSize
     }
 
-    // Get the best preview size
     private fun getBestPreviewSize(sizes: List<Camera.Size>): Camera.Size {
         var bestSize = sizes[0]
         for (size in sizes) {
@@ -184,8 +235,71 @@ class CustomCameraActivity : AppCompatActivity() {
     }
 
     private fun processCapturedImage(data: ByteArray) {
-        // Process the image data
-        Toast.makeText(this, "Image captured!", Toast.LENGTH_SHORT).show()
+        imageFile = File(getExternalFilesDir(null), "captured_image.jpg")
+
+        try {
+            // Save the captured image
+            FileOutputStream(imageFile).use { outputStream ->
+                outputStream.write(data)
+            }
+
+            // Load the image file and correct its orientation
+            val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
+            val rotatedBitmap = rotateImageToPortrait(bitmap, imageFile!!.absolutePath)
+
+            // Display the rotated image
+            displayImageView.setImageBitmap(rotatedBitmap)
+            displayImageView.visibility = View.VISIBLE
+
+            // Add the image to the list of captured images
+            capturedImages.add(rotatedBitmap)
+
+            Toast.makeText(this, "Image saved!", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Failed to save image", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun rotateImageToPortrait(bitmap: Bitmap, imagePath: String): Bitmap {
+        val exif = ExifInterface(imagePath)
+        val orientation =
+            exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)
+
+        // Determine the rotation angle
+        val rotationAngle = when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+            ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+            ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+            else -> 0f
+        }
+
+        val rotatedBitmap = rotateBitmap(bitmap, rotationAngle)
+
+        // Ensure the image is in portrait mode
+        val isPortrait = rotatedBitmap.height > rotatedBitmap.width
+        return if (isPortrait) {
+            rotatedBitmap
+        } else {
+            rotateBitmap(rotatedBitmap, 90f) // Rotate to portrait mode
+        }
+    }
+
+
+    private fun rotateBitmap(bitmap: Bitmap, degree: Float): Bitmap {
+        val matrix = Matrix()
+        matrix.postRotate(degree)
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    }
+
+
+    private fun showCapturedImage() {
+        if (capturedImages.isNotEmpty()) {
+            displayImageView.setImageBitmap(capturedImages.last()) // Show the most recent image
+            displayImageView.visibility = View.VISIBLE
+        } else {
+            Toast.makeText(this, "No images to display.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onDestroy() {
