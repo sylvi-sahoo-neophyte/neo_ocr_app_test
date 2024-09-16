@@ -120,28 +120,34 @@
 
     <ImageView
         android:id="@+id/left_icon"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginBottom="20dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginBottom="22dp"
         android:src="@drawable/baseline_burst_mode_24"
+        android:background="@drawable/icon_background_selector"
+        android:padding="10dp"
+        android:scaleType="centerInside"
+        app:tint="@color/white"
         app:layout_constraintBottom_toBottomOf="@id/black_background"
         app:layout_constraintEnd_toStartOf="@id/captureButton"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintVertical_bias="0.5"
-        app:tint="@color/white" />
-
+        app:layout_constraintVertical_bias="0.5" />
 
     <ImageView
         android:id="@+id/right_icon"
-        android:layout_width="35dp"
-        android:layout_height="35dp"
-        android:layout_marginBottom="20dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginBottom="22dp"
         android:src="@drawable/baseline_format_list_bulleted_24"
+        android:background="@drawable/icon_background_selector"
+        android:padding="10dp"
+        android:scaleType="centerInside"
+        app:tint="@color/white"
         app:layout_constraintBottom_toBottomOf="@id/black_background"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/captureButton"
-        app:layout_constraintVertical_bias="0.5"
-        app:tint="@color/white" />
+        app:layout_constraintVertical_bias="0.5" />
+
 
 
     <FrameLayout

@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.graphics.Matrix
 import android.hardware.Camera
 import android.media.ExifInterface
@@ -31,6 +32,7 @@ class CustomCameraActivity : AppCompatActivity() {
     private lateinit var leftIcon: ImageView
     private lateinit var rightIcon: ImageView
     private var imageFile: File? = null
+    private lateinit var captureButton: ImageButton
 
 
     private var capturedImages = mutableListOf<Bitmap>() // List to store captured images
@@ -51,15 +53,18 @@ class CustomCameraActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_custom_camera)
 
-        val captureButton = findViewById<ImageButton>(R.id.captureButton)
-
+        captureButton = findViewById(R.id.captureButton)
 
         captureButton.setOnClickListener {
             camera.takePicture(null, null) { data, _ ->
                 // Process the captured image
                 processCapturedImage(data)
+
+                // Immediately restart the camera preview after the image is processed
+                camera.startPreview()
             }
         }
+
 
         // Initialize the boxes
         rectBox1 = findViewById(R.id.rect_box1)
@@ -72,25 +77,48 @@ class CustomCameraActivity : AppCompatActivity() {
         displayImage = findViewById(R.id.display_image)
         rightIcon = findViewById<ImageView>(R.id.right_icon)
 
+
         // Initially hide the boxes and image
         hideBoxes()
         hideImage()
-
         rightIcon.setOnClickListener {
             if (isImageVisible) {
-                // Hide image if it's currently visible
                 hideImage()
             }
             toggleBoxesVisibility()
+
+            // Update right icon background and color based on the visibility of the boxes
+            if (areBoxesVisible) {
+                rightIcon.setBackgroundResource(R.drawable.white_circle)
+                rightIcon.setColorFilter(Color.BLACK)
+
+                // Reset the left icon to grey when the right icon is selected
+                leftIcon.setBackgroundResource(R.drawable.grey_circle)
+                leftIcon.setColorFilter(Color.WHITE)
+            } else {
+                rightIcon.setBackgroundResource(R.drawable.grey_circle)
+                rightIcon.setColorFilter(Color.WHITE)
+            }
         }
 
         // Handle left icon click to toggle image visibility
         leftIcon.setOnClickListener {
             if (areBoxesVisible) {
-                // Hide boxes if they are currently visible
                 hideBoxes()
             }
             toggleImageVisibility()
+
+            // Show the captured image when the left icon is clicked
+            if (isImageVisible) {
+                leftIcon.setBackgroundResource(R.drawable.white_circle)
+                leftIcon.setColorFilter(Color.BLACK)
+                // Reset the right icon to grey when the left icon is selected
+                rightIcon.setBackgroundResource(R.drawable.grey_circle)
+                rightIcon.setColorFilter(Color.WHITE)
+            } else {
+                leftIcon.setBackgroundResource(R.drawable.grey_circle)
+                leftIcon.setColorFilter(Color.WHITE)
+            }
             showCapturedImage()
         }
 
