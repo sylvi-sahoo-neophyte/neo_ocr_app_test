@@ -13,8 +13,10 @@ import android.os.Bundle
 import android.view.Surface
 import android.view.View
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -34,7 +36,6 @@ class CustomCameraActivity : AppCompatActivity() {
     private var imageFile: File? = null
     private lateinit var captureButton: ImageButton
 
-
     private var capturedImages = mutableListOf<Bitmap>() // List to store captured images
 
     // Declare TextView references for the boxes
@@ -42,11 +43,12 @@ class CustomCameraActivity : AppCompatActivity() {
     private lateinit var rectBox2: TextView
     private lateinit var rectBox3: TextView
     private lateinit var rectBox4: TextView
-    private lateinit var blackBackgroundWithImage: FrameLayout
-    private lateinit var displayImage: ImageView
 
     private var areBoxesVisible = false
     private var isImageVisible = false
+
+    private lateinit var horizontalScrollView: HorizontalScrollView
+    private lateinit var imageContainer: LinearLayout
 
     @SuppressLint("MissingInflatedId", "CutPasteId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,22 +67,20 @@ class CustomCameraActivity : AppCompatActivity() {
             }
         }
 
-
         // Initialize the boxes
         rectBox1 = findViewById(R.id.rect_box1)
         rectBox2 = findViewById(R.id.rect_box2)
         rectBox3 = findViewById(R.id.rect_box3)
         rectBox4 = findViewById(R.id.rect_box4)
-        displayImageView = findViewById(R.id.display_image)
         leftIcon = findViewById(R.id.left_icon)
-        blackBackgroundWithImage = findViewById(R.id.black_background_with_image)
-        displayImage = findViewById(R.id.display_image)
-        rightIcon = findViewById<ImageView>(R.id.right_icon)
-
+        rightIcon = findViewById(R.id.right_icon)
+        imageContainer = findViewById(R.id.image_container)
+        horizontalScrollView = findViewById(R.id.horizontal_scroll_view)
 
         // Initially hide the boxes and image
         hideBoxes()
         hideImage()
+
         rightIcon.setOnClickListener {
             if (isImageVisible) {
                 hideImage()
@@ -108,18 +108,21 @@ class CustomCameraActivity : AppCompatActivity() {
             }
             toggleImageVisibility()
 
-            // Show the captured image when the left icon is clicked
+            // Show the captured images when the left icon is clicked
             if (isImageVisible) {
                 leftIcon.setBackgroundResource(R.drawable.white_circle)
                 leftIcon.setColorFilter(Color.BLACK)
+
                 // Reset the right icon to grey when the left icon is selected
                 rightIcon.setBackgroundResource(R.drawable.grey_circle)
                 rightIcon.setColorFilter(Color.WHITE)
+
+                // Display all captured images
+                displayCapturedImages()
             } else {
                 leftIcon.setBackgroundResource(R.drawable.grey_circle)
                 leftIcon.setColorFilter(Color.WHITE)
             }
-            showCapturedImage()
         }
 
         // Check for camera permission
@@ -216,13 +219,11 @@ class CustomCameraActivity : AppCompatActivity() {
     }
 
     private fun showImage() {
-        blackBackgroundWithImage.visibility = View.VISIBLE
-        displayImage.visibility = View.VISIBLE
+        horizontalScrollView.visibility = View.VISIBLE
     }
 
     private fun hideImage() {
-        blackBackgroundWithImage.visibility = View.GONE
-        displayImage.visibility = View.GONE
+        horizontalScrollView.visibility = View.GONE
     }
 
     private fun getBestPictureSize(sizes: List<Camera.Size>): Camera.Size {
@@ -275,13 +276,10 @@ class CustomCameraActivity : AppCompatActivity() {
             val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
             val rotatedBitmap = rotateImageToPortrait(bitmap, imageFile!!.absolutePath)
 
-            // Display the rotated image
-            displayImageView.setImageBitmap(rotatedBitmap)
-            displayImageView.visibility = View.VISIBLE
-
             // Add the image to the list of captured images
             capturedImages.add(rotatedBitmap)
 
+            // Notify user
             Toast.makeText(this, "Image saved!", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -289,49 +287,77 @@ class CustomCameraActivity : AppCompatActivity() {
         }
     }
 
-    private fun rotateImageToPortrait(bitmap: Bitmap, imagePath: String): Bitmap {
-        val exif = ExifInterface(imagePath)
-        val orientation =
-            exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)
 
-        // Determine the rotation angle
-        val rotationAngle = when (orientation) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-            ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-            ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-            else -> 0f
+    private fun displayCapturedImages() {
+        imageContainer.removeAllViews() // Clear any previously displayed images
+
+        // Iterate over the captured images and add them to the container
+        for (capturedImage in capturedImages) {
+            val rotatedBitmap = rotateBitmapForVerticalDisplay(capturedImage)
+            val newImageView = ImageView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    80.dpToPx(), // Adjust size as needed
+                    150.dpToPx() // Adjust size to maintain vertical orientation
+                ).apply {
+                    marginEnd = 8.dpToPx()
+                }
+                setImageBitmap(rotatedBitmap)
+            }
+            imageContainer.addView(newImageView)
         }
-
-        val rotatedBitmap = rotateBitmap(bitmap, rotationAngle)
-
-        // Ensure the image is in portrait mode
-        val isPortrait = rotatedBitmap.height > rotatedBitmap.width
-        return if (isPortrait) {
-            rotatedBitmap
-        } else {
-            rotateBitmap(rotatedBitmap, 90f) // Rotate to portrait mode
-        }
+        horizontalScrollView.visibility = View.VISIBLE
     }
 
-
-    private fun rotateBitmap(bitmap: Bitmap, degree: Float): Bitmap {
+    private fun rotateBitmapForVerticalDisplay(bitmap: Bitmap): Bitmap {
         val matrix = Matrix()
-        matrix.postRotate(degree)
+        matrix.postRotate(90f) // Rotate the image 90 degrees clockwise to ensure vertical display
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
 
+    private fun rotateImageToPortrait(bitmap: Bitmap, imagePath: String): Bitmap {
+        val exif = ExifInterface(imagePath)
+        val orientation =
+            exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+        val matrix = Matrix()
 
-    private fun showCapturedImage() {
-        if (capturedImages.isNotEmpty()) {
-            displayImageView.setImageBitmap(capturedImages.last()) // Show the most recent image
-            displayImageView.visibility = View.VISIBLE
-        } else {
-            Toast.makeText(this, "No images to display.", Toast.LENGTH_SHORT).show()
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+        }
+
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    }
+
+    private fun Int.dpToPx(): Int {
+        return (this * resources.displayMetrics.density).toInt()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_CAMERA_PERMISSION) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                setupCamera()
+            } else {
+                Toast.makeText(this, "Camera permission is required", Toast.LENGTH_SHORT).show()
+                finish()
+            }
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        camera.release()  // Release the camera when done
+    override fun onPause() {
+        super.onPause()
+        camera.release()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::camera.isInitialized.not() && checkCameraPermission()) {
+            setupCamera()
+        }
     }
 }

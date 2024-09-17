@@ -23,7 +23,7 @@
                                 <PersistentState>
                                   <option name="values">
                                     <map>
-                                      <entry key="url" value="file:/$USER_HOME$/AppData/Local/Android/Sdk/icons/material/materialicons/format_list_bulleted/baseline_format_list_bulleted_24.xml" />
+                                      <entry key="url" value="file:/$USER_HOME$/AppData/Local/Android/Sdk/icons/material/materialicons/edit/baseline_edit_24.xml" />
                                     </map>
                                   </option>
                                 </PersistentState>
@@ -33,7 +33,7 @@
                         </option>
                         <option name="values">
                           <map>
-                            <entry key="outputName" value="baseline_format_list_bulleted_24" />
+                            <entry key="outputName" value="edit_icon" />
                             <entry key="sourceFile" value="C:\Users\sylvi\OneDrive\Desktop\neo_ocr_app_test" />
                           </map>
                         </option>

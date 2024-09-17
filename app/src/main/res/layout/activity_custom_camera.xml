@@ -89,6 +89,62 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
+
+    <!-- Rectangular Box 4 with Horizontal Layout -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/rect_box5"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/rounded_rect_black"
+        app:layout_constraintBottom_toTopOf="@id/black_background"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!-- Horizontal Layout inside the Box -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="50dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <!-- Price Text -->
+            <TextView
+                android:id="@+id/price_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingEnd="8dp"
+                android:text="Price"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+
+            <!-- Rs 123 Text -->
+            <TextView
+                android:id="@+id/price_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingEnd="8dp"
+                android:text="Rs 123"
+                android:textColor="@android:color/holo_green_light"
+                android:textSize="16sp" />
+
+            <!-- Edit Icon -->
+            <ImageView
+                android:id="@+id/edit_icon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/edit_icon"
+                app:tint="@android:color/white" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <!-- Black background below the button -->
     <View
         android:id="@+id/black_background"
@@ -123,36 +179,35 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_marginBottom="22dp"
-        android:src="@drawable/baseline_burst_mode_24"
         android:background="@drawable/icon_background_selector"
         android:padding="10dp"
         android:scaleType="centerInside"
-        app:tint="@color/white"
+        android:src="@drawable/baseline_burst_mode_24"
         app:layout_constraintBottom_toBottomOf="@id/black_background"
         app:layout_constraintEnd_toStartOf="@id/captureButton"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintVertical_bias="0.5" />
+        app:layout_constraintVertical_bias="0.5"
+        app:tint="@color/white" />
 
     <ImageView
         android:id="@+id/right_icon"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_marginBottom="22dp"
-        android:src="@drawable/baseline_format_list_bulleted_24"
         android:background="@drawable/icon_background_selector"
         android:padding="10dp"
         android:scaleType="centerInside"
-        app:tint="@color/white"
+        android:src="@drawable/baseline_format_list_bulleted_24"
         app:layout_constraintBottom_toBottomOf="@id/black_background"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/captureButton"
-        app:layout_constraintVertical_bias="0.5" />
+        app:layout_constraintVertical_bias="0.5"
+        app:tint="@color/white" />
 
 
-
-    <FrameLayout
-        android:id="@+id/black_background_with_image"
-        android:layout_width="0dp"
+    <HorizontalScrollView
+        android:id="@+id/horizontal_scroll_view"
+        android:layout_width="match_parent"
         android:layout_height="150dp"
         android:background="@android:color/black"
         android:visibility="gone"
@@ -160,14 +215,13 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <ImageView
-            android:id="@+id/display_image"
-            android:layout_width="80dp"
-            android:layout_height="100dp"
-            android:layout_gravity="center"
-            android:scaleType="centerInside"
-            android:visibility="gone" />
-    </FrameLayout>
+        <LinearLayout
+            android:id="@+id/image_container"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
