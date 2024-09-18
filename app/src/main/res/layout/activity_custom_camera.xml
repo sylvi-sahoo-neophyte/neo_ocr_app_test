@@ -272,7 +272,6 @@
         app:layout_constraintVertical_bias="0.5"
         app:tint="@null" />
 
-
     <ImageView
         android:id="@+id/left_icon"
         android:layout_width="48dp"
@@ -303,7 +302,6 @@
         app:layout_constraintVertical_bias="0.5"
         app:tint="@color/white" />
 
-
     <HorizontalScrollView
         android:id="@+id/horizontal_scroll_view"
         android:layout_width="match_parent"
@@ -321,6 +319,14 @@
             android:gravity="center_vertical"
             android:orientation="horizontal" />
     </HorizontalScrollView>
+
+    <ImageView
+        android:id="@+id/full_screen_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/black"
+        android:scaleType="fitCenter"
+        android:visibility="gone" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

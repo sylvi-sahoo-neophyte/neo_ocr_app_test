@@ -30,11 +30,25 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import okio.BufferedSink
+import okio.buffer
+import okio.source
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 class CustomCameraActivity : AppCompatActivity() {
+
 
     private lateinit var camera: Camera
     private lateinit var preview: CameraPreview
@@ -42,7 +56,7 @@ class CustomCameraActivity : AppCompatActivity() {
     private lateinit var leftIcon: ImageView
     private lateinit var rightIcon: ImageView
     private var imageFile: File? = null
-    private lateinit var captureButton: ImageButton
+    private lateinit var cameraView: ImageButton
 
     private var capturedImages = mutableListOf<Bitmap>() // List to store captured images
 
@@ -66,14 +80,15 @@ class CustomCameraActivity : AppCompatActivity() {
 //    private lateinit var numberInput: EditText
     private lateinit var editIconBATCH: ImageView
 
+
     @SuppressLint("MissingInflatedId", "CutPasteId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_custom_camera)
 
-        captureButton = findViewById(R.id.captureButton)
+        cameraView = findViewById(R.id.captureButton)
 
-        captureButton.setOnClickListener {
+        cameraView.setOnClickListener {
             camera.takePicture(null, null) { data, _ ->
                 // Process the captured image
                 processCapturedImage(data)
@@ -156,13 +171,6 @@ class CustomCameraActivity : AppCompatActivity() {
 
 
 //        val editIcon: ImageView = findViewById(R.id.edit_icon1)
-        editIconMFD.setOnClickListener {
-            openDatePicker()
-        }
-
-        editIconEXP.setOnClickListener {
-            openDatePicker()
-        }
 
 
         // Find the views
@@ -232,9 +240,17 @@ class CustomCameraActivity : AppCompatActivity() {
             }
         }
 
+        editIconMFD.setOnClickListener {
+            openDatePicker(R.id.price_value2)
+        }
+
+        editIconEXP.setOnClickListener {
+            openDatePicker(R.id.price_value3)
+        }
+
     }
 
-    private fun openDatePicker() {
+    private fun openDatePicker(textViewId: Int) {
         val calendar = Calendar.getInstance()
         val year = calendar.get(Calendar.YEAR)
         val month = calendar.get(Calendar.MONTH)
@@ -244,9 +260,9 @@ class CustomCameraActivity : AppCompatActivity() {
             DatePickerDialog(this, { _, selectedYear, selectedMonth, selectedDay ->
                 // Handle the selected date here
                 val selectedDate = "$selectedDay/${selectedMonth + 1}/$selectedYear"
-                // You can display the date in a TextView or handle it as needed
-                val priceLabel: TextView = findViewById(R.id.price_label1)
-                priceLabel.text = selectedDate
+                // Update the appropriate TextView with the selected date
+                val priceValue: TextView = findViewById(textViewId)
+                priceValue.text = selectedDate
             }, year, month, day)
 
         datePickerDialog.show()
@@ -343,6 +359,7 @@ class CustomCameraActivity : AppCompatActivity() {
         horizontalScrollView.visibility = View.GONE
     }
 
+
     private fun getBestPictureSize(sizes: List<Camera.Size>): Camera.Size {
         var bestSize = sizes[0]
         for (size in sizes) {
@@ -389,6 +406,9 @@ class CustomCameraActivity : AppCompatActivity() {
                 outputStream.write(data)
             }
 
+            // Log the path of the saved image
+            Log.d("ImagePath", "Image saved at: ${imageFile!!.absolutePath}")
+
             // Load the image file and correct its orientation
             val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
             val rotatedBitmap = rotateImageToPortrait(bitmap, imageFile!!.absolutePath)
@@ -396,8 +416,22 @@ class CustomCameraActivity : AppCompatActivity() {
             // Add the image to the list of captured images
             capturedImages.add(rotatedBitmap)
 
+            uploadImage(imageFile!!) { success, message ->
+                runOnUiThread {
+                    if (success) {
+                        Toast.makeText(this, "Image uploaded successfully!", Toast.LENGTH_SHORT)
+                            .show()
+                    } else {
+                        Toast.makeText(this, "Failed to upload image: $message", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                }
+            }
+
             // Notify user
             Toast.makeText(this, "Image saved!", Toast.LENGTH_SHORT).show()
+
+
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to save image", Toast.LENGTH_SHORT).show()
@@ -405,8 +439,67 @@ class CustomCameraActivity : AppCompatActivity() {
     }
 
 
+    fun uploadImage(imageFile: File, callback: (Boolean, String?) -> Unit) {
+        // Configure timeouts for the OkHttpClient
+        val client = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)  // Increase connection timeout
+            .readTimeout(30, TimeUnit.SECONDS)     // Increase read timeout
+            .writeTimeout(30, TimeUnit.SECONDS)    // Increase write timeout
+            .build()
+
+        Log.d("ImageURI1", "Image1: ${imageFile.absolutePath}")
+        Log.d("ImageUploadSDK", "File size: ${imageFile.length()} bytes")
+
+        val mediaType = "image/jpeg".toMediaType()
+
+        val requestBody = object : RequestBody() {
+            override fun contentType() = mediaType
+
+            override fun contentLength() = imageFile.length()
+
+            override fun writeTo(sink: BufferedSink) {
+                val source = imageFile.source().buffer()
+                sink.writeAll(source)
+                source.close()
+            }
+        }
+
+        // Build the request with multipart form data
+        val request = Request.Builder()
+            .url("http://216.48.183.210:8000/upload-image/image.jpg")
+            .post(
+                MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("file", imageFile.name, requestBody)
+                    .build()
+            )
+            .build()
+
+        Log.d("ImageUploadSDK", "Sending request to ${request.url}")
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e("ImageUploadSDK", "API call failed", e)
+                callback(false, e.message)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val success = response.isSuccessful
+                val message = if (success) {
+                    response.body?.string() ?: "Upload successful"
+                } else {
+                    val errorBody = response.body?.string() ?: "Unknown error"
+                    "Upload failed: ${response.message}, Response body: $errorBody"
+                }
+                Log.d("ImageUploadSDK", message)
+                callback(success, message)
+            }
+        })
+    }
+
+
     private fun displayCapturedImages() {
-        imageContainer.removeAllViews() // Clear any previously displayed images
+        imageContainer.removeAllViews() // Clear previously displayed images
 
         // Iterate over the captured images and add them to the container
         for (capturedImage in capturedImages) {
@@ -419,11 +512,35 @@ class CustomCameraActivity : AppCompatActivity() {
                     marginEnd = 8.dpToPx()
                 }
                 setImageBitmap(rotatedBitmap)
+
+                // Set click listener to display the image in full-screen mode
+                setOnClickListener {
+                    showFullScreenImage(rotatedBitmap)
+                }
             }
             imageContainer.addView(newImageView)
         }
         horizontalScrollView.visibility = View.VISIBLE
     }
+
+    private fun showFullScreenImage(image: Bitmap) {
+        val fullScreenImageView: ImageView = findViewById(R.id.full_screen_image)
+
+        // Ensure the view exists before manipulating
+        if (fullScreenImageView != null && cameraView != null) {
+            // Hide the camera view and show the full-screen image
+            cameraView.visibility = View.GONE
+            fullScreenImageView.setImageBitmap(image)
+            fullScreenImageView.visibility = View.VISIBLE
+
+            // Set a click listener to exit full-screen mode and return to the camera view
+            fullScreenImageView.setOnClickListener {
+                fullScreenImageView.visibility = View.GONE
+                cameraView.visibility = View.VISIBLE
+            }
+        }
+    }
+
 
     private fun rotateBitmapForVerticalDisplay(bitmap: Bitmap): Bitmap {
         val matrix = Matrix()
@@ -475,4 +592,6 @@ class CustomCameraActivity : AppCompatActivity() {
             setupCamera()
         }
     }
+
+
 }
