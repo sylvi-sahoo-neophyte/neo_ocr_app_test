@@ -2,6 +2,8 @@ package com.example.camera_ai
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.DatePickerDialog
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -10,8 +12,13 @@ import android.graphics.Matrix
 import android.hardware.Camera
 import android.media.ExifInterface
 import android.os.Bundle
+import android.util.Log
+import android.view.KeyEvent
 import android.view.Surface
 import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageButton
@@ -20,17 +27,18 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Calendar
 
 class CustomCameraActivity : AppCompatActivity() {
 
     private lateinit var camera: Camera
     private lateinit var preview: CameraPreview
     private val REQUEST_CODE_CAMERA_PERMISSION = 100
-    private lateinit var displayImageView: ImageView
     private lateinit var leftIcon: ImageView
     private lateinit var rightIcon: ImageView
     private var imageFile: File? = null
@@ -38,17 +46,25 @@ class CustomCameraActivity : AppCompatActivity() {
 
     private var capturedImages = mutableListOf<Bitmap>() // List to store captured images
 
-    // Declare TextView references for the boxes
-    private lateinit var rectBox1: TextView
-    private lateinit var rectBox2: TextView
-    private lateinit var rectBox3: TextView
-    private lateinit var rectBox4: TextView
+
+    private lateinit var rectangular_box1: ConstraintLayout
+    private lateinit var rectangular_box2: ConstraintLayout
+    private lateinit var rectangular_box3: ConstraintLayout
+    private lateinit var rectangular_box4: ConstraintLayout
+
+
+    private lateinit var editIconMFD: ImageView
+    private lateinit var editIconEXP: ImageView
 
     private var areBoxesVisible = false
     private var isImageVisible = false
 
     private lateinit var horizontalScrollView: HorizontalScrollView
     private lateinit var imageContainer: LinearLayout
+
+    //    private lateinit var editIconMRP: ImageView
+//    private lateinit var numberInput: EditText
+    private lateinit var editIconBATCH: ImageView
 
     @SuppressLint("MissingInflatedId", "CutPasteId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,14 +84,20 @@ class CustomCameraActivity : AppCompatActivity() {
         }
 
         // Initialize the boxes
-        rectBox1 = findViewById(R.id.rect_box1)
-        rectBox2 = findViewById(R.id.rect_box2)
-        rectBox3 = findViewById(R.id.rect_box3)
-        rectBox4 = findViewById(R.id.rect_box4)
+        rectangular_box1 = findViewById(R.id.rectangular_box1)
+        rectangular_box2 = findViewById(R.id.rectangular_box2)
+        rectangular_box3 = findViewById(R.id.rectangular_box3)
+        rectangular_box4 = findViewById(R.id.rectangular_box4)
         leftIcon = findViewById(R.id.left_icon)
         rightIcon = findViewById(R.id.right_icon)
         imageContainer = findViewById(R.id.image_container)
         horizontalScrollView = findViewById(R.id.horizontal_scroll_view)
+        editIconMFD = findViewById(R.id.edit_icon2)
+        editIconEXP = findViewById(R.id.edit_icon3)
+//        editIconMRP = findViewById(R.id.edit_icon1)
+//        numberInput = findViewById(R.id.number_input)
+        editIconBATCH = findViewById(R.id.edit_icon4)
+
 
         // Initially hide the boxes and image
         hideBoxes()
@@ -131,20 +153,115 @@ class CustomCameraActivity : AppCompatActivity() {
         } else {
             requestCameraPermission()
         }
+
+
+//        val editIcon: ImageView = findViewById(R.id.edit_icon1)
+        editIconMFD.setOnClickListener {
+            openDatePicker()
+        }
+
+        editIconEXP.setOnClickListener {
+            openDatePicker()
+        }
+
+
+        // Find the views
+        val editIcon: ImageView = findViewById(R.id.edit_icon1)
+        val numberInput: EditText = findViewById(R.id.number_input)
+        val priceValueText: TextView = findViewById(R.id.price_value1)
+
+
+        editIcon.setOnClickListener {
+            numberInput.visibility = View.VISIBLE
+            numberInput.requestFocus()
+
+            // Show the keyboard programmatically
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(numberInput, InputMethodManager.SHOW_IMPLICIT)
+        }
+
+
+        numberInput.setOnEditorActionListener { _, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_DONE || event?.action == KeyEvent.ACTION_DOWN) {
+                val enteredValue = numberInput.text.toString().trim()
+
+                // Log to check if the value is being captured
+                Log.d("EditText", "Captured value: $enteredValue")
+
+                if (enteredValue.isNotEmpty()) {
+                    priceValueText.text = enteredValue // Update TextView with new value
+                } else {
+                    priceValueText.text = "Rs 0" // Fallback if input is empty
+                }
+
+                // Hide the EditText and the keyboard after input
+                numberInput.visibility = View.GONE
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(numberInput.windowToken, 0)
+                true
+            } else {
+                false
+            }
+        }
+
+
+        val editText4: EditText = findViewById(R.id.edit_text4)
+        val Batchvalue: TextView = findViewById(R.id.price_value4)
+
+        editIconBATCH.setOnClickListener {
+            editText4.visibility = View.VISIBLE
+            editText4.requestFocus() // Focus on the EditText to open the keyboard
+
+            // Show the keyboard programmatically
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(editText4, InputMethodManager.SHOW_IMPLICIT)
+        }
+
+        // Optionally, hide the EditText and keyboard when done
+        editText4.setOnEditorActionListener { _, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_DONE || event?.action == KeyEvent.ACTION_DOWN) {
+                Batchvalue.text = editText4.text.toString() // Update the TextView with input text
+
+                // Hide the EditText and keyboard
+                editText4.visibility = View.GONE
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(editText4.windowToken, 0)
+                true
+            } else {
+                false
+            }
+        }
+
     }
+
+    private fun openDatePicker() {
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        val datePickerDialog =
+            DatePickerDialog(this, { _, selectedYear, selectedMonth, selectedDay ->
+                // Handle the selected date here
+                val selectedDate = "$selectedDay/${selectedMonth + 1}/$selectedYear"
+                // You can display the date in a TextView or handle it as needed
+                val priceLabel: TextView = findViewById(R.id.price_label1)
+                priceLabel.text = selectedDate
+            }, year, month, day)
+
+        datePickerDialog.show()
+    }
+
 
     private fun checkCameraPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.CAMERA
+            this, Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun requestCameraPermission() {
         ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.CAMERA),
-            REQUEST_CODE_CAMERA_PERMISSION
+            this, arrayOf(Manifest.permission.CAMERA), REQUEST_CODE_CAMERA_PERMISSION
         )
     }
 
@@ -194,18 +311,18 @@ class CustomCameraActivity : AppCompatActivity() {
     }
 
     private fun hideBoxes() {
-        rectBox1.visibility = View.GONE
-        rectBox2.visibility = View.GONE
-        rectBox3.visibility = View.GONE
-        rectBox4.visibility = View.GONE
+        rectangular_box1.visibility = View.GONE
+        rectangular_box2.visibility = View.GONE
+        rectangular_box3.visibility = View.GONE
+        rectangular_box4.visibility = View.GONE
         areBoxesVisible = false
     }
 
     private fun showBoxes() {
-        rectBox1.visibility = View.VISIBLE
-        rectBox2.visibility = View.VISIBLE
-        rectBox3.visibility = View.VISIBLE
-        rectBox4.visibility = View.VISIBLE
+        rectangular_box1.visibility = View.VISIBLE
+        rectangular_box2.visibility = View.VISIBLE
+        rectangular_box3.visibility = View.VISIBLE
+        rectangular_box4.visibility = View.VISIBLE
         areBoxesVisible = true
     }
 
@@ -334,9 +451,7 @@ class CustomCameraActivity : AppCompatActivity() {
     }
 
     override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
+        requestCode: Int, permissions: Array<String>, grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CODE_CAMERA_PERMISSION) {

@@ -6,4 +6,12 @@
     <string name="box_2">Box 2</string>
     <string name="box_3">Box 3</string>
     <string name="box_4">Box 4</string>
+    <string name="mrp">MRP</string>
+    <string name="Price">Rs 1456</string>
+    <string name="mfd">MFD</string>
+    <string name="Date">12/23</string>
+    <string name="exp">EXP</string>
+    <string name="Exp">3/26</string>
+    <string name="batch">BATCH</string>
+    <string name="Batch">34SDTYH789</string>
 </resources>

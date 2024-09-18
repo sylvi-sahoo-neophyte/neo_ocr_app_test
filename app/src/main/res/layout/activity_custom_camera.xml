@@ -21,78 +21,173 @@
 
 
     <!-- Rectangular Box 1 -->
-    <TextView
-        android:id="@+id/rect_box1"
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/rectangular_box1"
         android:layout_width="0dp"
         android:layout_height="50dp"
         android:layout_marginHorizontal="20dp"
         android:layout_marginBottom="10dp"
         android:background="@drawable/rounded_rect_black"
-        android:gravity="center"
-        android:text="@string/box_1"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/rect_box2"
+        app:layout_constraintBottom_toTopOf="@id/rectangular_box2"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="50dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            tools:ignore="MissingConstraints">
+
+            <!-- Price Text -->
+            <TextView
+                android:id="@+id/price_label1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="20dp"
+                android:paddingEnd="10dp"
+                android:text="@string/mrp"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                tools:ignore="RtlSymmetry" />
+
+            <!-- Rs 123 Text -->
+            <TextView
+                android:id="@+id/price_value1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingEnd="18dp"
+                android:text="@string/Price"
+                android:textColor="@android:color/holo_green_light"
+                android:textSize="16sp"
+                tools:ignore="RtlSymmetry" />
+
+            <!-- Edit Icon -->
+            <ImageView
+                android:id="@+id/edit_icon1"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/edit_icon"
+                app:tint="@android:color/white" />
+
+
+            <EditText
+                android:id="@+id/number_input"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@android:color/white"
+                android:inputType="number"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Rectangular Box 2 -->
-    <TextView
-        android:id="@+id/rect_box2"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/rectangular_box2"
         android:layout_width="0dp"
         android:layout_height="50dp"
         android:layout_marginHorizontal="20dp"
         android:layout_marginBottom="10dp"
         android:background="@drawable/rounded_rect_black"
-        android:gravity="center"
-        android:text="@string/box_2"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/rect_box3"
+        app:layout_constraintBottom_toTopOf="@id/rectangular_box3"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="50dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            tools:ignore="MissingConstraints">
+
+            <TextView
+                android:id="@+id/price_label2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="20dp"
+                android:paddingEnd="18dp"
+                android:text="@string/mfd"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                tools:ignore="RtlSymmetry" />
+
+            <TextView
+                android:id="@+id/price_value2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingEnd="18dp"
+                android:text="@string/Date"
+                android:textColor="@android:color/holo_green_light"
+                android:textSize="16sp"
+                tools:ignore="RtlSymmetry" />
+
+            <ImageView
+                android:id="@+id/edit_icon2"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/edit_icon"
+                app:tint="@android:color/white" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Rectangular Box 3 -->
-    <TextView
-        android:id="@+id/rect_box3"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/rectangular_box3"
         android:layout_width="0dp"
         android:layout_height="50dp"
         android:layout_marginHorizontal="20dp"
         android:layout_marginBottom="10dp"
         android:background="@drawable/rounded_rect_black"
-        android:gravity="center"
-        android:text="@string/box_3"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/rect_box4"
+        app:layout_constraintBottom_toTopOf="@id/rectangular_box4"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent">
 
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="50dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            tools:ignore="MissingConstraints">
+
+            <TextView
+                android:id="@+id/price_label3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="20dp"
+                android:paddingEnd="18dp"
+                android:text="@string/exp"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                tools:ignore="RtlSymmetry" />
+
+            <TextView
+                android:id="@+id/price_value3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingEnd="18dp"
+                android:text="@string/Exp"
+                android:textColor="@android:color/holo_green_light"
+                android:textSize="16sp"
+                tools:ignore="RtlSymmetry" />
+
+            <ImageView
+                android:id="@+id/edit_icon3"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/edit_icon"
+                app:tint="@android:color/white" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Rectangular Box 4 -->
-    <TextView
-        android:id="@+id/rect_box4"
-        android:layout_width="0dp"
-        android:layout_height="50dp"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="10dp"
-        android:background="@drawable/rounded_rect_black"
-        android:gravity="center"
-        android:text="@string/box_4"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/black_background"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-
-    <!-- Rectangular Box 4 with Horizontal Layout -->
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/rect_box5"
+        android:id="@+id/rectangular_box4"
         android:layout_width="0dp"
         android:layout_height="50dp"
         android:layout_marginHorizontal="20dp"
@@ -102,47 +197,51 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <!-- Horizontal Layout inside the Box -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_marginEnd="50dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            tools:ignore="MissingConstraints">
 
-            <!-- Price Text -->
             <TextView
-                android:id="@+id/price_label"
+                android:id="@+id/price_label4"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingEnd="8dp"
-                android:text="Price"
+                android:paddingStart="20dp"
+                android:paddingEnd="18dp"
+                android:text="@string/batch"
                 android:textColor="@android:color/white"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                tools:ignore="RtlSymmetry" />
 
-            <!-- Rs 123 Text -->
             <TextView
-                android:id="@+id/price_value"
+                android:id="@+id/price_value4"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingEnd="8dp"
-                android:text="Rs 123"
+                android:paddingEnd="18dp"
+                android:text="@string/Batch"
                 android:textColor="@android:color/holo_green_light"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                tools:ignore="RtlSymmetry" />
 
-            <!-- Edit Icon -->
             <ImageView
-                android:id="@+id/edit_icon"
+                android:id="@+id/edit_icon4"
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:src="@drawable/edit_icon"
                 app:tint="@android:color/white" />
-        </LinearLayout>
 
+            <EditText
+                android:id="@+id/edit_text4"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:textColor="@android:color/black"
+                android:visibility="gone"
+                tools:ignore="MissingConstraints" />
+        </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Black background below the button -->
