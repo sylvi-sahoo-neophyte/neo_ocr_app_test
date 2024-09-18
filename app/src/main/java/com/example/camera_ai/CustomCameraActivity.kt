@@ -41,6 +41,8 @@ import okhttp3.Response
 import okio.BufferedSink
 import okio.buffer
 import okio.source
+import org.json.JSONException
+import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -67,18 +69,31 @@ class CustomCameraActivity : AppCompatActivity() {
     private lateinit var rectangular_box4: ConstraintLayout
 
 
+    private lateinit var fullScreenImageView: ImageView
+
+
     private lateinit var editIconMFD: ImageView
     private lateinit var editIconEXP: ImageView
 
     private var areBoxesVisible = false
     private var isImageVisible = false
+    private var isFullScreen = false
 
     private lateinit var horizontalScrollView: HorizontalScrollView
     private lateinit var imageContainer: LinearLayout
 
-    //    private lateinit var editIconMRP: ImageView
-//    private lateinit var numberInput: EditText
+
+    private lateinit var box1: ConstraintLayout
+    private lateinit var box2: ConstraintLayout
+    private lateinit var box3: ConstraintLayout
+    private lateinit var box4: ConstraintLayout
+
     private lateinit var editIconBATCH: ImageView
+
+    // Global variable to store the API response details
+    companion object {
+        var ocrDetails: MutableMap<String, Any> = mutableMapOf()
+    }
 
 
     @SuppressLint("MissingInflatedId", "CutPasteId")
@@ -109,9 +124,14 @@ class CustomCameraActivity : AppCompatActivity() {
         horizontalScrollView = findViewById(R.id.horizontal_scroll_view)
         editIconMFD = findViewById(R.id.edit_icon2)
         editIconEXP = findViewById(R.id.edit_icon3)
-//        editIconMRP = findViewById(R.id.edit_icon1)
-//        numberInput = findViewById(R.id.number_input)
         editIconBATCH = findViewById(R.id.edit_icon4)
+        fullScreenImageView = findViewById(R.id.full_screen_image)
+
+
+        box1 = findViewById(R.id.rect_1)
+        box2 = findViewById(R.id.rect_2)
+        box3 = findViewById(R.id.rect_3)
+        box4 = findViewById(R.id.rect_4)
 
 
         // Initially hide the boxes and image
@@ -485,14 +505,45 @@ class CustomCameraActivity : AppCompatActivity() {
 
             override fun onResponse(call: Call, response: Response) {
                 val success = response.isSuccessful
-                val message = if (success) {
-                    response.body?.string() ?: "Upload successful"
+                val responseBody = response.body?.string() ?: ""
+
+                if (success) {
+                    try {
+                        // Parse the response body as JSON
+                        val jsonObject = JSONObject(responseBody)
+                        val bodyObject = jsonObject.getJSONObject("body")
+                        val ocrResult = bodyObject.getJSONObject("ocr_result")
+
+                        // Extract fields from the response
+                        val mrp = ocrResult.getDouble("MRP")
+                        val mfgDate = ocrResult.getString("Mfg. Date")
+                        val expDate = ocrResult.getString("Exp. Date")
+                        val metadataId = bodyObject.getString("metadata_id")
+                        val barcode = bodyObject.getString("barcode")
+
+                        // Store the extracted details in the global variable
+                        ocrDetails["MRP"] = mrp
+                        ocrDetails["Mfg. Date"] = mfgDate
+                        ocrDetails["Exp. Date"] = expDate
+                        ocrDetails["Metadata ID"] = metadataId
+                        ocrDetails["Barcode"] = barcode
+
+                        // Log or print the global variable
+                        Log.d("ParsedResponse", ocrDetails.toString())
+                        callback(success, "Details stored globally.")
+
+                    } catch (e: JSONException) {
+                        Log.e("ImageUploadSDK", "Failed to parse JSON: ${e.message}")
+                        callback(false, "Failed to parse JSON")
+                    }
                 } else {
-                    val errorBody = response.body?.string() ?: "Unknown error"
-                    "Upload failed: ${response.message}, Response body: $errorBody"
+                    val errorBody = responseBody.ifEmpty { "Unknown error" }
+                    Log.e(
+                        "ImageUploadSDK",
+                        "Upload failed: ${response.message}, Response body: $errorBody"
+                    )
+                    callback(false, "Upload failed: ${response.message}, Response body: $errorBody")
                 }
-                Log.d("ImageUploadSDK", message)
-                callback(success, message)
             }
         })
     }
@@ -524,7 +575,7 @@ class CustomCameraActivity : AppCompatActivity() {
     }
 
     private fun showFullScreenImage(image: Bitmap) {
-        val fullScreenImageView: ImageView = findViewById(R.id.full_screen_image)
+
 
         // Ensure the view exists before manipulating
         if (fullScreenImageView != null && cameraView != null) {
@@ -533,9 +584,18 @@ class CustomCameraActivity : AppCompatActivity() {
             fullScreenImageView.setImageBitmap(image)
             fullScreenImageView.visibility = View.VISIBLE
 
+            box1.visibility = View.VISIBLE
+            box2.visibility = View.VISIBLE
+            box3.visibility = View.VISIBLE
+            box4.visibility = View.VISIBLE
+
             // Set a click listener to exit full-screen mode and return to the camera view
             fullScreenImageView.setOnClickListener {
                 fullScreenImageView.visibility = View.GONE
+                box1.visibility = View.GONE
+                box2.visibility = View.GONE
+                box3.visibility = View.GONE
+                box4.visibility = View.GONE
                 cameraView.visibility = View.VISIBLE
             }
         }
