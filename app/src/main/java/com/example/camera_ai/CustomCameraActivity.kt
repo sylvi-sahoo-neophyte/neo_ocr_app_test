@@ -90,6 +90,10 @@ class CustomCameraActivity : AppCompatActivity() {
 
     private lateinit var editIconBATCH: ImageView
 
+    private lateinit var priceValueText: TextView
+    private lateinit var expiryValueText: TextView
+    private lateinit var mfdValueText: TextView
+
     // Global variable to store the API response details
     companion object {
         var ocrDetails: MutableMap<String, Any> = mutableMapOf()
@@ -132,6 +136,11 @@ class CustomCameraActivity : AppCompatActivity() {
         box2 = findViewById(R.id.rect_2)
         box3 = findViewById(R.id.rect_3)
         box4 = findViewById(R.id.rect_4)
+
+
+        priceValueText = findViewById(R.id.price) // MRP
+        expiryValueText = findViewById(R.id.exp) // Expiry date
+        mfdValueText = findViewById(R.id.mfd)
 
 
         // Initially hide the boxes and image
@@ -515,7 +524,7 @@ class CustomCameraActivity : AppCompatActivity() {
                         val ocrResult = bodyObject.getJSONObject("ocr_result")
 
                         // Extract fields from the response
-                        val mrp = ocrResult.getDouble("MRP")
+                        val mrp = ocrResult.getDouble("MRP").toString()
                         val mfgDate = ocrResult.getString("Mfg. Date")
                         val expDate = ocrResult.getString("Exp. Date")
                         val metadataId = bodyObject.getString("metadata_id")
@@ -531,6 +540,10 @@ class CustomCameraActivity : AppCompatActivity() {
                         // Log or print the global variable
                         Log.d("ParsedResponse", ocrDetails.toString())
                         callback(success, "Details stored globally.")
+
+                        runOnUiThread {
+                            updateUIFromResponse(ocrDetails)
+                        }
 
                     } catch (e: JSONException) {
                         Log.e("ImageUploadSDK", "Failed to parse JSON: ${e.message}")
@@ -650,6 +663,40 @@ class CustomCameraActivity : AppCompatActivity() {
         super.onResume()
         if (::camera.isInitialized.not() && checkCameraPermission()) {
             setupCamera()
+        }
+    }
+
+    private fun updateUIFromResponse(response: Map<String, Any>) {
+        runOnUiThread {
+            // Log the received response to check if the values are correct
+            Log.d("updateUIFromResponse", "Received response: $response")
+
+            // Safely convert values to String
+            val mrp = response["MRP"]?.toString() ?: "Rs 0"
+            val expiry = response["Exp. Date"]?.toString() ?: "MM/DD/YYYY"
+            val mfd = response["Mfg. Date"]?.toString() ?: "MM/DD/YYYY"
+
+            // Log the parsed values to verify them
+            Log.d("updateUIFromResponse", "Parsed values -> MRP: $mrp, Expiry: $expiry, MFD: $mfd")
+
+
+//            findViewById<View>(R.id.rect_3).visibility = View.VISIBLE
+//            findViewById<View>(R.id.rect_4).visibility = View.VISIBLE
+
+            // Set the new text values
+            priceValueText.text = mrp
+            expiryValueText.text = expiry
+            mfdValueText.text = mfd
+
+            // Log the text set to the TextViews to ensure they are updated
+            Log.d("mrp", "MRP TextView: ${priceValueText.text}")
+            Log.d("updateUIFromResponse", "Expiry TextView: ${expiryValueText.text}")
+            Log.d("updateUIFromResponse", "MFD TextView: ${mfdValueText.text}")
+
+            // Force invalidate the parent layout if needed
+            val parentLayout: View =
+                findViewById(R.id.full_screen_image) // Replace with your parent layout ID
+            parentLayout.invalidate()
         }
     }
 

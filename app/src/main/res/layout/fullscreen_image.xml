@@ -25,7 +25,7 @@
         android:layout_marginBottom="10dp"
         android:visibility="gone"
         android:background="@drawable/rounded_rect_black"
-        app:layout_constraintBottom_toTopOf="@id/rect_1"
+        app:layout_constraintBottom_toTopOf="@id/rect_2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -51,7 +51,7 @@
 
             <!-- Rs 123 Text -->
             <TextView
-                android:id="@+id/price_value1"
+                android:id="@+id/price"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingEnd="18dp"
@@ -114,7 +114,7 @@
                 tools:ignore="RtlSymmetry" />
 
             <TextView
-                android:id="@+id/price_value2"
+                android:id="@+id/mfd"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingEnd="18dp"
@@ -165,7 +165,7 @@
                 tools:ignore="RtlSymmetry" />
 
             <TextView
-                android:id="@+id/price_value3"
+                android:id="@+id/exp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingEnd="18dp"
@@ -217,7 +217,7 @@
                 tools:ignore="RtlSymmetry" />
 
             <TextView
-                android:id="@+id/price_value4"
+                android:id="@+id/batch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingEnd="18dp"
