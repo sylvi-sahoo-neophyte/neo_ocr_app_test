@@ -1,14 +1,22 @@
 package com.example.camera_ai
 
+import RegexInference
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.AlarmManager
 import android.app.DatePickerDialog
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.ImageFormat
 import android.graphics.Matrix
+import android.graphics.Rect
+import android.graphics.YuvImage
 import android.hardware.Camera
 import android.media.ExifInterface
 import android.os.Bundle
@@ -18,6 +26,7 @@ import android.view.Surface
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
@@ -30,6 +39,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -43,6 +55,7 @@ import okio.buffer
 import okio.source
 import org.json.JSONException
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -50,7 +63,6 @@ import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 class CustomCameraActivity : AppCompatActivity() {
-
 
     private lateinit var camera: Camera
     private lateinit var preview: CameraPreview
@@ -71,13 +83,11 @@ class CustomCameraActivity : AppCompatActivity() {
 
     private lateinit var fullScreenImageView: ImageView
 
-
     private lateinit var editIconMFD: ImageView
     private lateinit var editIconEXP: ImageView
 
     private var areBoxesVisible = false
     private var isImageVisible = false
-    private var isFullScreen = false
 
     private lateinit var horizontalScrollView: HorizontalScrollView
     private lateinit var imageContainer: LinearLayout
@@ -94,16 +104,31 @@ class CustomCameraActivity : AppCompatActivity() {
     private lateinit var expiryValueText: TextView
     private lateinit var mfdValueText: TextView
 
+//    private lateinit var recognizedTextView: TextView
+
+
+    private lateinit var mrpTextView: TextView
+    private lateinit var manufacturingDateTextView: TextView
+    private lateinit var expiryDateTextView: TextView
+    private lateinit var numberInput: EditText
+    private lateinit var sessionButton: Button
+
+
+    private var session: Int = 1
+
     // Global variable to store the API response details
     companion object {
         var ocrDetails: MutableMap<String, Any> = mutableMapOf()
     }
 
-
     @SuppressLint("MissingInflatedId", "CutPasteId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_custom_camera)
+
+        // Initialize SharedPreferences
+        val prefs: SharedPreferences = getSharedPreferences("session_prefs", MODE_PRIVATE)
+        session = prefs.getInt("session_count", 1)  // Default value is 1
 
         cameraView = findViewById(R.id.captureButton)
 
@@ -111,13 +136,11 @@ class CustomCameraActivity : AppCompatActivity() {
             camera.takePicture(null, null) { data, _ ->
                 // Process the captured image
                 processCapturedImage(data)
-
-                // Immediately restart the camera preview after the image is processed
                 camera.startPreview()
             }
         }
 
-        // Initialize the boxes
+        // Initialize other views
         rectangular_box1 = findViewById(R.id.rectangular_box1)
         rectangular_box2 = findViewById(R.id.rectangular_box2)
         rectangular_box3 = findViewById(R.id.rectangular_box3)
@@ -130,65 +153,31 @@ class CustomCameraActivity : AppCompatActivity() {
         editIconEXP = findViewById(R.id.edit_icon3)
         editIconBATCH = findViewById(R.id.edit_icon4)
         fullScreenImageView = findViewById(R.id.full_screen_image)
-
-
+        mrpTextView = findViewById(R.id.mrpTextView)
+        manufacturingDateTextView = findViewById(R.id.manufacturingDateTextView)
+        expiryDateTextView = findViewById(R.id.expiryDateTextView)
         box1 = findViewById(R.id.rect_1)
         box2 = findViewById(R.id.rect_2)
         box3 = findViewById(R.id.rect_3)
         box4 = findViewById(R.id.rect_4)
-
-
         priceValueText = findViewById(R.id.price) // MRP
         expiryValueText = findViewById(R.id.exp) // Expiry date
         mfdValueText = findViewById(R.id.mfd)
-
 
         // Initially hide the boxes and image
         hideBoxes()
         hideImage()
 
         rightIcon.setOnClickListener {
-            if (isImageVisible) {
-                hideImage()
-            }
+            if (isImageVisible) hideImage()
             toggleBoxesVisibility()
-
-            // Update right icon background and color based on the visibility of the boxes
-            if (areBoxesVisible) {
-                rightIcon.setBackgroundResource(R.drawable.white_circle)
-                rightIcon.setColorFilter(Color.BLACK)
-
-                // Reset the left icon to grey when the right icon is selected
-                leftIcon.setBackgroundResource(R.drawable.grey_circle)
-                leftIcon.setColorFilter(Color.WHITE)
-            } else {
-                rightIcon.setBackgroundResource(R.drawable.grey_circle)
-                rightIcon.setColorFilter(Color.WHITE)
-            }
+            updateRightIcon()
         }
 
-        // Handle left icon click to toggle image visibility
         leftIcon.setOnClickListener {
-            if (areBoxesVisible) {
-                hideBoxes()
-            }
+            if (areBoxesVisible) hideBoxes()
             toggleImageVisibility()
-
-            // Show the captured images when the left icon is clicked
-            if (isImageVisible) {
-                leftIcon.setBackgroundResource(R.drawable.white_circle)
-                leftIcon.setColorFilter(Color.BLACK)
-
-                // Reset the right icon to grey when the left icon is selected
-                rightIcon.setBackgroundResource(R.drawable.grey_circle)
-                rightIcon.setColorFilter(Color.WHITE)
-
-                // Display all captured images
-                displayCapturedImages()
-            } else {
-                leftIcon.setBackgroundResource(R.drawable.grey_circle)
-                leftIcon.setColorFilter(Color.WHITE)
-            }
+            updateLeftIcon()
         }
 
         // Check for camera permission
@@ -198,85 +187,174 @@ class CustomCameraActivity : AppCompatActivity() {
             requestCameraPermission()
         }
 
-
-//        val editIcon: ImageView = findViewById(R.id.edit_icon1)
-
-
-        // Find the views
         val editIcon: ImageView = findViewById(R.id.edit_icon1)
-        val numberInput: EditText = findViewById(R.id.number_input)
+        numberInput = findViewById(R.id.number_input)
         val priceValueText: TextView = findViewById(R.id.price_value1)
-
 
         editIcon.setOnClickListener {
             numberInput.visibility = View.VISIBLE
             numberInput.requestFocus()
-
-            // Show the keyboard programmatically
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.showSoftInput(numberInput, InputMethodManager.SHOW_IMPLICIT)
+            showKeyboard(numberInput)
         }
-
 
         numberInput.setOnEditorActionListener { _, actionId, event ->
             if (actionId == EditorInfo.IME_ACTION_DONE || event?.action == KeyEvent.ACTION_DOWN) {
-                val enteredValue = numberInput.text.toString().trim()
-
-                // Log to check if the value is being captured
-                Log.d("EditText", "Captured value: $enteredValue")
-
-                if (enteredValue.isNotEmpty()) {
-                    priceValueText.text = enteredValue // Update TextView with new value
-                } else {
-                    priceValueText.text = "Rs 0" // Fallback if input is empty
-                }
-
-                // Hide the EditText and the keyboard after input
-                numberInput.visibility = View.GONE
-                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                imm.hideSoftInputFromWindow(numberInput.windowToken, 0)
+                handleNumberInput(priceValueText)
                 true
             } else {
                 false
             }
         }
 
+        // Session Button
+        sessionButton =
+            findViewById(R.id.stop_session_button)  // Assume you have this button in your layout
+        sessionButton.text = "Stop Session $session"
 
-        val editText4: EditText = findViewById(R.id.edit_text4)
-        val Batchvalue: TextView = findViewById(R.id.price_value4)
-
-        editIconBATCH.setOnClickListener {
-            editText4.visibility = View.VISIBLE
-            editText4.requestFocus() // Focus on the EditText to open the keyboard
-
-            // Show the keyboard programmatically
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.showSoftInput(editText4, InputMethodManager.SHOW_IMPLICIT)
+        sessionButton.setOnClickListener {
+            session++
+            sessionButton.text = "Stop Session $session"
+            saveSessionCount(prefs)
+            Toast.makeText(this, "Session ${session - 1} ended", Toast.LENGTH_SHORT).show()
         }
 
-        // Optionally, hide the EditText and keyboard when done
-        editText4.setOnEditorActionListener { _, actionId, event ->
+        // Other EditText interactions
+        setupEditIcon(editIconBATCH, findViewById(R.id.edit_text4), findViewById(R.id.price_value4))
+        editIconMFD.setOnClickListener { openDatePicker(R.id.price_value2) }
+        editIconEXP.setOnClickListener { openDatePicker(R.id.price_value3) }
+
+
+        setMidnightAlarm()
+        checkSessionReset()
+    }
+
+    private fun setMidnightAlarm() {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, ResetSessionReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            this,
+            0, // request code
+            intent,
+            PendingIntent.FLAG_IMMUTABLE // or FLAG_MUTABLE if needed
+        )
+
+        // Set the alarm to start at midnight
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = System.currentTimeMillis()
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+        }
+
+        // If the time for the alarm is in the past, move to the next day
+        if (calendar.timeInMillis <= System.currentTimeMillis()) {
+            calendar.add(Calendar.DAY_OF_YEAR, 1)
+        }
+
+        alarmManager.setInexactRepeating(
+            AlarmManager.RTC_WAKEUP,
+            calendar.timeInMillis,
+            AlarmManager.INTERVAL_DAY,
+            pendingIntent
+        )
+    }
+
+
+    private fun checkSessionReset() {
+        val prefs: SharedPreferences = getSharedPreferences("session_prefs", MODE_PRIVATE)
+        val lastResetDate = prefs.getLong("last_reset_date", 0)
+        val currentDate = System.currentTimeMillis()
+
+        if (lastResetDate == 0L || isSameDay(lastResetDate, currentDate)) {
+            // No reset needed or first run
+        } else {
+            // Reset the session
+            session = 1
+            saveSessionCount(prefs)
+        }
+
+        // Update the last reset date
+        with(prefs.edit()) {
+            putLong("last_reset_date", currentDate)
+            apply()
+        }
+    }
+
+    private fun isSameDay(date1: Long, date2: Long): Boolean {
+        val cal1 = Calendar.getInstance().apply { timeInMillis = date1 }
+        val cal2 = Calendar.getInstance().apply { timeInMillis = date2 }
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+    }
+
+
+    private fun showKeyboard(view: View) {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun handleNumberInput(priceValueText: TextView) {
+        val enteredValue = numberInput.text.toString().trim()
+        Log.d("EditText", "Captured value: $enteredValue")
+        priceValueText.text = if (enteredValue.isNotEmpty()) enteredValue else "Rs 0"
+        numberInput.visibility = View.GONE
+        hideKeyboard()
+    }
+
+    private fun hideKeyboard() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(numberInput.windowToken, 0)
+    }
+
+    private fun saveSessionCount(prefs: SharedPreferences) {
+        with(prefs.edit()) {
+            putInt("session_count", session)
+            apply()
+        }
+    }
+
+    private fun updateRightIcon() {
+        if (areBoxesVisible) {
+            rightIcon.setBackgroundResource(R.drawable.white_circle)
+            rightIcon.setColorFilter(Color.BLACK)
+            leftIcon.setBackgroundResource(R.drawable.grey_circle)
+            leftIcon.setColorFilter(Color.WHITE)
+        } else {
+            rightIcon.setBackgroundResource(R.drawable.grey_circle)
+            rightIcon.setColorFilter(Color.WHITE)
+        }
+    }
+
+    private fun updateLeftIcon() {
+        if (isImageVisible) {
+            leftIcon.setBackgroundResource(R.drawable.white_circle)
+            leftIcon.setColorFilter(Color.BLACK)
+            rightIcon.setBackgroundResource(R.drawable.grey_circle)
+            rightIcon.setColorFilter(Color.WHITE)
+            displayCapturedImages()
+        } else {
+            leftIcon.setBackgroundResource(R.drawable.grey_circle)
+            leftIcon.setColorFilter(Color.WHITE)
+        }
+    }
+
+    private fun setupEditIcon(icon: ImageView, editText: EditText, valueText: TextView) {
+        icon.setOnClickListener {
+            editText.visibility = View.VISIBLE
+            editText.requestFocus()
+            showKeyboard(editText)
+        }
+
+        editText.setOnEditorActionListener { _, actionId, event ->
             if (actionId == EditorInfo.IME_ACTION_DONE || event?.action == KeyEvent.ACTION_DOWN) {
-                Batchvalue.text = editText4.text.toString() // Update the TextView with input text
-
-                // Hide the EditText and keyboard
-                editText4.visibility = View.GONE
-                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                imm.hideSoftInputFromWindow(editText4.windowToken, 0)
+                valueText.text = editText.text.toString()
+                editText.visibility = View.GONE
+                hideKeyboard()
                 true
             } else {
                 false
             }
         }
-
-        editIconMFD.setOnClickListener {
-            openDatePicker(R.id.price_value2)
-        }
-
-        editIconEXP.setOnClickListener {
-            openDatePicker(R.id.price_value3)
-        }
-
     }
 
     private fun openDatePicker(textViewId: Int) {
@@ -297,7 +375,6 @@ class CustomCameraActivity : AppCompatActivity() {
         datePickerDialog.show()
     }
 
-
     private fun checkCameraPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
             this, Manifest.permission.CAMERA
@@ -308,43 +385,6 @@ class CustomCameraActivity : AppCompatActivity() {
         ActivityCompat.requestPermissions(
             this, arrayOf(Manifest.permission.CAMERA), REQUEST_CODE_CAMERA_PERMISSION
         )
-    }
-
-    private fun setupCamera() {
-        camera = Camera.open()
-        val params = camera.parameters
-
-        // Set the best possible focus mode (auto or continuous picture)
-        val focusModes = params.supportedFocusModes
-        if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
-            params.focusMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE
-        } else if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
-            params.focusMode = Camera.Parameters.FOCUS_MODE_AUTO
-        }
-
-        // Set the highest picture quality available
-        val sizes = params.supportedPictureSizes
-        val bestSize = getBestPictureSize(sizes)
-        params.setPictureSize(bestSize.width, bestSize.height)
-
-        // Set the best preview size available
-        val previewSizes = params.supportedPreviewSizes
-        val bestPreviewSize = getBestPreviewSize(previewSizes)
-        params.setPreviewSize(bestPreviewSize.width, bestPreviewSize.height)
-
-        // Set the JPEG quality (highest = 100)
-        params.jpegQuality = 100
-
-        // Set these parameters to the camera
-        camera.parameters = params
-
-        // Start the camera preview
-        preview = CameraPreview(this, camera)
-        val previewFrame = findViewById<FrameLayout>(R.id.camera_preview)
-        previewFrame.addView(preview)
-
-        // Set the correct display orientation
-        setCameraDisplayOrientation()
     }
 
     private fun toggleBoxesVisibility() {
@@ -388,6 +428,190 @@ class CustomCameraActivity : AppCompatActivity() {
         horizontalScrollView.visibility = View.GONE
     }
 
+    @SuppressLint("SetTextI18n")
+    private fun setupCamera() {
+        camera = Camera.open()
+        val params = camera.parameters
+
+        // Set the best possible focus mode (auto or continuous picture)
+        val focusModes = params.supportedFocusModes
+        if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+            params.focusMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE
+        } else if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
+            params.focusMode = Camera.Parameters.FOCUS_MODE_AUTO
+        }
+
+        // Set the highest picture quality available
+        val sizes = params.supportedPictureSizes
+        val bestSize = getBestPictureSize(sizes)
+        params.setPictureSize(bestSize.width, bestSize.height)
+
+        // Set the best preview size available
+        val previewSizes = params.supportedPreviewSizes
+        val bestPreviewSize = getBestPreviewSize(previewSizes)
+        params.setPreviewSize(bestPreviewSize.width, bestPreviewSize.height)
+
+        // Set the JPEG quality (highest = 100)
+        params.jpegQuality = 100
+
+        // Set these parameters to the camera
+        camera.parameters = params
+
+        // Start the camera preview
+        preview = CameraPreview(this, camera)
+        val previewFrame = findViewById<FrameLayout>(R.id.camera_preview)
+        previewFrame.addView(preview)
+
+        // Set the correct display orientation
+        setCameraDisplayOrientation()
+
+        // Set up a camera preview callback to process frames
+        camera.setPreviewCallback { data, _ ->
+            processImage(data, camera.parameters.previewSize)
+        }
+    }
+
+    private fun processImage(data: ByteArray, previewSize: Camera.Size) {
+        val image = YuvImage(data, ImageFormat.NV21, previewSize.width, previewSize.height, null)
+        val out = ByteArrayOutputStream()
+        image.compressToJpeg(Rect(0, 0, previewSize.width, previewSize.height), 100, out)
+        val imageBytes = out.toByteArray()
+        val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+
+        // Create InputImage object
+        val inputImage = InputImage.fromBitmap(bitmap, getRotationCompensation())
+
+        // Set up ML Kit text recognition
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+        // Process the image
+        recognizer.process(inputImage)
+            .addOnSuccessListener { visionText ->
+                // Task completed successfully
+                val recognizedText = visionText.text
+                runOnUiThread {
+                    // Update UI with recognized text
+                    val extractedData = RegexInference.processText(recognizedText)
+
+                    // Get MRP, Manufacturing Date, and Expiry Date
+                    val mrp = extractedData["mrp"] as List<Double>?
+                    val manufacturingDate = extractedData["manufacturingDate"] as String?
+                    val expiryDate = extractedData["expiryDate"] as String?
+
+//                    mrpTextView.text = if (mrp != null) {
+//                        "Extracted MRP: ${mrp.joinToString(", ")}"
+//                    } else {
+//                        "Extracted MRP : 0"
+//                    }
+
+//                    manufacturingDateTextView.text = if (manufacturingDate != null) {
+//                        "Manufacturing Date: $manufacturingDate"
+//                    } else {
+//                        "Manufacturing Date: 0 "
+//                    }
+//
+//                    expiryDateTextView.text = if (expiryDate != null) {
+//                        "Expiry Date: $expiryDate"
+//                    } else {
+//                        "Expiry Date: 0"
+//                    }
+
+
+                    val sharedPreferences =
+                        this.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+                    val editor = sharedPreferences.edit()
+
+
+                    // Retrieve previously stored values from SharedPreferences
+                    var previousMrp: List<Double> =
+                        sharedPreferences.getString("previousMrp", "0.0")?.split(",")
+                            ?.map { it.toDouble() } ?: listOf(0.0)
+                    var previousManufacturingDate: String =
+                        sharedPreferences.getString("previousManufacturingDate", "0") ?: "0"
+                    var previousExpiryDate: String =
+                        sharedPreferences.getString("previousExpiryDate", "0") ?: "0"
+
+                    // Update the TextViews and check for new values
+                    mrpTextView.text =
+                        if (mrp != null && mrp.isNotEmpty() && mrp.any { it != 0.0 }) {
+                            previousMrp = mrp // Update previous value only if valid
+                            editor.putString(
+                                "previousMrp",
+                                mrp.joinToString(",")
+                            ) // Store in SharedPreferences
+                            editor.apply()
+                            "Extracted MRP: ${mrp.joinToString(", ")}"
+                        } else {
+                            // If current mrp is null, empty, or all zeros, show previous value
+                            "Extracted MRP: ${previousMrp.joinToString(", ")}"
+                        }
+
+                    manufacturingDateTextView.text =
+                        if (manufacturingDate != null && manufacturingDate != "0") {
+                            previousManufacturingDate =
+                                manufacturingDate // Update previous value only if valid
+                            editor.putString(
+                                "previousManufacturingDate",
+                                manufacturingDate
+                            ) // Store in SharedPreferences
+                            editor.apply() // Commit changes
+                            "Manufacturing Date: $manufacturingDate"
+                        } else {
+                            // If current manufacturingDate is null or zero, show previous value
+                            "Manufacturing Date: $previousManufacturingDate"
+                        }
+
+                    expiryDateTextView.text = if (expiryDate != null && expiryDate != "0") {
+                        previousExpiryDate = expiryDate // Update previous value only if valid
+                        editor.putString(
+                            "previousExpiryDate",
+                            expiryDate
+                        ) // Store in SharedPreferences
+                        editor.apply() // Commit changes
+                        "Expiry Date: $expiryDate"
+                    } else {
+                        // If current expiryDate is null or zero, show previous value
+                        "Expiry Date: $previousExpiryDate"
+                    }
+
+// Log extracted information
+                    Log.d(
+                        "Extracted Data:",
+                        "Price: $previousMrp, Manufacturing Date: $previousManufacturingDate, Expiry Date: $previousExpiryDate"
+                    )
+
+// Log extracted information
+//                    Log.d(
+//                        "Extracted Data:",
+//                        "Price: $previousMrp, Manufacturing Date: $previousManufacturingDate, Expiry Date: $previousExpiryDate"
+//                    )
+
+                }
+            }
+            .addOnFailureListener { e ->
+                // Task failed with an exception
+                Log.e("ML Kit", "Text recognition failed: ${e.message}")
+            }
+    }
+
+
+    private fun getRotationCompensation(): Int {
+        val deviceRotation = windowManager.defaultDisplay.rotation
+        var degrees = when (deviceRotation) {
+            Surface.ROTATION_0 -> 0
+            Surface.ROTATION_90 -> 90
+            Surface.ROTATION_180 -> 180
+            Surface.ROTATION_270 -> 270
+            else -> 0
+        }
+
+        // Account for the mirroring of the image on the device screen
+        val cameraInfo = Camera.CameraInfo()
+        Camera.getCameraInfo(Camera.CameraInfo.CAMERA_FACING_BACK, cameraInfo)
+        degrees = (cameraInfo.orientation - degrees + 360) % 360
+
+        return degrees
+    }
 
     private fun getBestPictureSize(sizes: List<Camera.Size>): Camera.Size {
         var bestSize = sizes[0]
@@ -467,7 +691,6 @@ class CustomCameraActivity : AppCompatActivity() {
         }
     }
 
-
     fun uploadImage(imageFile: File, callback: (Boolean, String?) -> Unit) {
         // Configure timeouts for the OkHttpClient
         val client = OkHttpClient.Builder()
@@ -542,7 +765,7 @@ class CustomCameraActivity : AppCompatActivity() {
                         callback(success, "Details stored globally.")
 
                         runOnUiThread {
-                            updateUIFromResponse(ocrDetails)
+                            displaydatafromAPI(ocrDetails)
                         }
 
                     } catch (e: JSONException) {
@@ -560,7 +783,6 @@ class CustomCameraActivity : AppCompatActivity() {
             }
         })
     }
-
 
     private fun displayCapturedImages() {
         imageContainer.removeAllViews() // Clear previously displayed images
@@ -654,19 +876,8 @@ class CustomCameraActivity : AppCompatActivity() {
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        camera.release()
-    }
 
-    override fun onResume() {
-        super.onResume()
-        if (::camera.isInitialized.not() && checkCameraPermission()) {
-            setupCamera()
-        }
-    }
-
-    private fun updateUIFromResponse(response: Map<String, Any>) {
+    private fun displaydatafromAPI(response: Map<String, Any>) {
         runOnUiThread {
             // Log the received response to check if the values are correct
             Log.d("updateUIFromResponse", "Received response: $response")
@@ -698,6 +909,36 @@ class CustomCameraActivity : AppCompatActivity() {
                 findViewById(R.id.full_screen_image) // Replace with your parent layout ID
             parentLayout.invalidate()
         }
+    }
+
+    private fun releaseCamera() {
+        try {
+            if (::camera.isInitialized) {
+                camera.setPreviewCallback(null)
+                camera.stopPreview()
+                camera.release()
+            }
+        } catch (e: Exception) {
+            Log.e("Camera Error", "Error releasing camera: ${e.message}")
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        releaseCamera()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::camera.isInitialized.not() && checkCameraPermission()) {
+            setupCamera()
+        }
+    }
+
+
+    override fun onDestroy() {
+        super.onDestroy()
+        releaseCamera() // Release camera resources when the activity is destroyed
     }
 
 

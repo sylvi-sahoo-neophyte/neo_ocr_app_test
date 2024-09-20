@@ -19,6 +19,19 @@
         android:layout_height="match_parent"
         android:background="@drawable/overlay_square" />
 
+    <Button
+        android:id="@+id/stop_session_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="20dp"
+        android:backgroundTint="@android:color/holo_blue_dark"
+        android:text="Stop Session"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
 
     <!-- Rectangular Box 1 -->
 
@@ -244,6 +257,71 @@
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <!--    <TextView-->
+    <!--        android:id="@+id/recognizedTextView"-->
+    <!--        android:layout_width="match_parent"-->
+    <!--        android:layout_height="wrap_content"-->
+    <!--        android:background="#FFFFFF"-->
+    <!--        android:ellipsize="end"-->
+    <!--        android:lines="3"-->
+    <!--        android:padding="16dp"-->
+    <!--        android:text="Recognized text will appear here"-->
+    <!--        android:textColor="#000000"-->
+    <!--        android:visibility="gone"-->
+    <!--        app:layout_constraintBottom_toTopOf="@id/black_background"-->
+    <!--        app:layout_constraintEnd_toEndOf="parent"-->
+    <!--        app:layout_constraintStart_toStartOf="parent" />-->
+
+
+    <!-- TextView for MRP -->
+    <TextView
+        android:id="@+id/mrpTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        android:ellipsize="end"
+        android:lines="1"
+        android:padding="16dp"
+        android:text="Extracted MRP:"
+        android:textColor="#000000"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@id/black_background"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- TextView for Manufacturing Date -->
+    <TextView
+        android:id="@+id/manufacturingDateTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        android:ellipsize="end"
+        android:lines="1"
+        android:padding="16dp"
+        android:text="Manufacturing Date:"
+        android:textColor="#000000"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@id/mrpTextView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- TextView for Expiry Date -->
+    <TextView
+        android:id="@+id/expiryDateTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        android:ellipsize="end"
+        android:lines="1"
+        android:padding="16dp"
+        android:text="Expiry Date:"
+        android:textColor="#000000"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@id/manufacturingDateTextView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+
     <!-- Black background below the button -->
     <View
         android:id="@+id/black_background"
@@ -254,7 +332,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHeight_percent="0.12"
         app:layout_constraintStart_toStartOf="parent" />
-
 
     <ImageButton
         android:id="@+id/captureButton"
@@ -271,6 +348,7 @@
         app:layout_constraintTop_toTopOf="@id/black_background"
         app:layout_constraintVertical_bias="0.5"
         app:tint="@null" />
+
 
     <ImageView
         android:id="@+id/left_icon"
@@ -325,14 +403,6 @@
         layout="@layout/fullscreen_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
-
-<!--    <ImageView-->
-<!--        android:id="@+id/full_screen_image"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="match_parent"-->
-<!--        android:background="@android:color/black"-->
-<!--        android:scaleType="fitCenter"-->
-<!--        android:visibility="gone" />-->
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
